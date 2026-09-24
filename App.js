@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  Modal, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform 
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, 
+  SafeAreaView, Modal, TextInput, KeyboardAvoidingView, Platform 
 } from 'react-native';
 
 export default function App() {
@@ -20,54 +12,40 @@ export default function App() {
     { id: '3', title: 'Read 20 Pages of a Book', category: 'Growth', time: '08:00 PM', completed: false },
   ]);
 
-  // Filter state ('All', 'Active', 'Completed')
-  const [filter, setFilter] = useState('All');
-
-  // Modal visibility and form state
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [newTime, setNewTime] = useState('');
+  const [newCategory, setNewCategory] = useState('Growth');
+  const [newTime, setNewTime] = useState('12:00 PM');
 
   const togglePlan = (id) => {
-    setPlans(plans.map(plan => 
-      plan.id === id ? { ...plan, completed: !plan.completed } : plan
-    ));
-  };
-
-  const deletePlan = (id) => {
-    setPlans(plans.filter(plan => plan.id !== id));
+    setPlans(plans.map(plan => plan.id === id ? { ...plan, completed: !plan.completed } : plan));
   };
 
   const addPlan = () => {
-    if (!newTitle.trim()) return; // Prevent empty plans
-
+    if (!newTitle.trim()) return;
     const newPlanObj = {
       id: Date.now().toString(),
       title: newTitle,
-      category: newCategory.trim() || 'General',
-      time: newTime.trim() || 'Anytime',
+      category: newCategory,
+      time: newTime,
       completed: false,
     };
-
-    setPlans([newPlanObj, ...plans]);
-    
-    // Reset form and close modal
+    setPlans([...plans, newPlanObj]);
     setNewTitle('');
-    setNewCategory('');
-    setNewTime('');
     setModalVisible(false);
   };
 
-  // Filtered plans calculation
-  const filteredPlans = plans.filter(plan => {
-    if (filter === 'Active') return !plan.completed;
-    if (filter === 'Completed') return plan.completed;
-    return true; // 'All'
-  });
-
   const completedCount = plans.filter(p => p.completed).length;
-  const progressPercentage = plans.length > 0 ? Math.round((completedCount / plans.length) * 100) : 0;
+  const progressPercentage = Math.round((completedCount / plans.length) * 100) || 0;
+
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'Health': return { bg: '#E1F8DC', text: '#2B7A0B' };
+      case 'Coding': return { bg: '#E0F2FE', text: '#0369A1' };
+      case 'Growth': return { bg: '#FEF3C7', text: '#B45309' };
+      default: return { bg: '#EEF2FF', text: '#4F46E5' };
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -75,14 +53,10 @@ export default function App() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hello, Tracker! 👋</Text>
-            <Text style={styles.subtitle}>Here is your plan for today</Text>
+            <Text style={styles.greeting}>Hello, Creator! ✨</Text>
+            <Text style={styles.subtitle}>Make today count and conquer your goals</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.addButton} 
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
             <Text style={styles.addButtonText}>+</Text>
           </TouchableOpacity>
         </View>
@@ -90,138 +64,93 @@ export default function App() {
         {/* Progress Card */}
         <View style={styles.progressCard}>
           <View style={styles.progressInfo}>
-            <Text style={styles.progressTitle}>Daily Progress</Text>
-            <Text style={styles.progressStats}>{completedCount} of {plans.length} completed</Text>
+            <View>
+              <Text style={styles.progressTitle}>Daily Momentum</Text>
+              <Text style={styles.progressStats}>{completedCount} of {plans.length} tasks completed</Text>
+            </View>
+            <View style={styles.percentageBadge}>
+              <Text style={styles.percentageText}>{progressPercentage}%</Text>
+            </View>
           </View>
           <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
           </View>
         </View>
 
-        {/* Filter Tabs */}
-        <View style={styles.filterContainer}>
-          {['All', 'Active', 'Completed'].map((tab) => (
-            <TouchableOpacity 
-              key={tab} 
-              style={[styles.filterTab, filter === tab && styles.filterTabActive]}
-              onPress={() => setFilter(tab)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.filterTabText, filter === tab && styles.filterTabTextActive]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Section Title */}
-        <Text style={styles.sectionTitle}>Your Plans</Text>
+        <Text style={styles.sectionTitle}>Today's Agenda</Text>
 
         {/* Plans List */}
         <ScrollView showsVerticalScrollIndicator={false} style={styles.planList}>
-          {filteredPlans.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No {filter.toLowerCase()} plans found.</Text>
-            </View>
-          ) : (
-            filteredPlans.map((plan) => (
+          {plans.map((plan) => {
+            const catColors = getCategoryColor(plan.category);
+            return (
               <TouchableOpacity 
                 key={plan.id} 
-                style={[styles.planCard, plan.completed && styles.planCardCompleted]}
+                style={[styles.planCard, plan.completed && styles.planCardCompleted]} 
                 onPress={() => togglePlan(plan.id)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 <View style={styles.planLeft}>
                   <View style={[styles.checkbox, plan.completed && styles.checkboxChecked]}>
                     {plan.completed && <Text style={styles.checkmark}>✓</Text>}
                   </View>
                   <View style={styles.planTextContainer}>
-                    <Text style={[styles.planTitle, plan.completed && styles.planTitleCompleted]} numberOfLines={1}>
+                    <Text style={[styles.planTitle, plan.completed && styles.planTitleCompleted]}>
                       {plan.title}
                     </Text>
-                    <Text style={styles.planTime}>⏰ {plan.time}</Text>
+                    <Text style={styles.planTime}>🕒 {plan.time}</Text>
                   </View>
                 </View>
-
-                <View style={styles.planRight}>
-                  <View style={[styles.categoryBadge, plan.completed && styles.categoryBadgeCompleted]}>
-                    <Text style={[styles.categoryText, plan.completed && styles.categoryTextCompleted]} numberOfLines={1}>
-                      {plan.category}
-                    </Text>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={styles.deleteButton} 
-                    onPress={() => deletePlan(plan.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.deleteButtonText}>🗑️</Text>
-                  </TouchableOpacity>
+                <View style={[styles.categoryBadge, { backgroundColor: catColors.bg }, plan.completed && styles.categoryBadgeCompleted]}>
+                  <Text style={[styles.categoryText, { color: catColors.text }, plan.completed && styles.categoryTextCompleted]}>
+                    {plan.category}
+                  </Text>
                 </View>
               </TouchableOpacity>
-            ))
-          )}
+            );
+          })}
         </ScrollView>
 
-        {/* Add Plan Modal Form */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalOverlay}
-          >
+        {/* Add Plan Modal */}
+        <Modal animationType="slide" transparent={true} visible={modalVisible}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add New Plan</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.inputLabel}>Plan Title</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Morning Jog, Study Session"
+              <Text style={styles.modalTitle}>New Plan</Text>
+              
+              <Text style={styles.inputLabel}>Task Title</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="e.g., Morning Jog, System Architecture" 
                 placeholderTextColor="#94A3B8"
                 value={newTitle}
                 onChangeText={setNewTitle}
               />
 
-              <Text style={styles.inputLabel}>Category</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Health, Coding, Work"
+              <Text style={styles.inputLabel}>Category (Health, Coding, Growth)</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Health" 
                 placeholderTextColor="#94A3B8"
                 value={newCategory}
                 onChangeText={setNewCategory}
               />
 
               <Text style={styles.inputLabel}>Time</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., 08:30 AM"
+              <TextInput 
+                style={styles.input} 
+                placeholder="08:00 AM" 
                 placeholderTextColor="#94A3B8"
                 value={newTime}
                 onChangeText={setNewTime}
               />
 
-              <View style={styles.modalActions}>
-                <TouchableOpacity 
-                  style={styles.cancelButton} 
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.saveButton} 
-                  onPress={addPlan}
-                >
-                  <Text style={styles.saveButtonText}>Add Plan</Text>
+                <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={addPlan}>
+                  <Text style={styles.saveBtnText}>Save Plan</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -235,293 +164,60 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
+  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  greeting: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
+  subtitle: { fontSize: 13, color: '#64748B', marginTop: 3, fontWeight: '500' },
+  addButton: { 
+    backgroundColor: '#6366F1', width: 48, height: 48, borderRadius: 24, 
+    justifyContent: 'center', alignItems: 'center', shadowColor: '#6366F1', 
+    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 6 
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  addButtonText: { color: '#FFFFFF', fontSize: 26, fontWeight: '600', marginTop: -2 },
+  progressCard: { 
+    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 24, 
+    shadowColor: '#64748B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+  progressInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  progressTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
+  progressStats: { fontSize: 13, color: '#64748B', marginTop: 2, fontWeight: '500' },
+  percentageBadge: { backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  percentageText: { color: '#6366F1', fontWeight: '700', fontSize: 13 },
+  progressBarBackground: { height: 10, backgroundColor: '#F1F5F9', borderRadius: 5, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: '#6366F1', borderRadius: 5 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginBottom: 12 },
+  planList: { flex: 1 },
+  planCard: { 
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
+    backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginBottom: 12, 
+    borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 3, elevation: 1 
   },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+  planCardCompleted: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', opacity: 0.8 },
+  planLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
+  checkbox: { 
+    width: 26, height: 26, borderRadius: 8, borderWidth: 2, borderColor: '#CBD5E1', 
+    justifyContent: 'center', alignItems: 'center', marginRight: 14, backgroundColor: '#FFFFFF' 
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#6C757D',
-    marginTop: 2,
-  },
-  addButton: {
-    backgroundColor: '#4F46E5',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
-  progressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  progressStats: {
-    fontSize: 14,
-    color: '#6C757D',
-    fontWeight: '500',
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: '#E9ECEF',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#4F46E5',
-    borderRadius: 4,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 16,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  filterTabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  filterTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  filterTabTextActive: {
-    color: '#4F46E5',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
-  planList: {
-    flex: 1,
-  },
-  emptyContainer: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#94A3B8',
-    fontSize: 15,
-  },
-  planCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-  },
-  planCardCompleted: {
-    backgroundColor: '#F1F3F5',
-    borderColor: '#E2E8F0',
-  },
-  planLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 10,
-  },
-  planTextContainer: {
-    flex: 1,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  checkboxChecked: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  planTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  planTitleCompleted: {
-    color: '#94A3B8',
-    textDecorationLine: 'line-through',
-  },
-  planTime: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  planRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryBadge: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  categoryBadgeCompleted: {
-    backgroundColor: '#E2E8F0',
-  },
-  categoryText: {
-    fontSize: 11,
-    color: '#4F46E5',
-    fontWeight: '500',
-  },
-  categoryTextCompleted: {
-    color: '#64748B',
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#64748B',
-    fontWeight: 'bold',
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1E293B',
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  cancelButtonText: {
-    color: '#475569',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#4F46E5',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
-  },
+  checkboxChecked: { backgroundColor: '#10B981', borderColor: '#10B981' },
+  checkmark: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
+  planTextContainer: { flex: 1 },
+  planTitle: { fontSize: 15, fontWeight: '600', color: '#1E293B', marginBottom: 4 },
+  planTitleCompleted: { color: '#94A3B8', textDecorationLine: 'line-through' },
+  planTime: { fontSize: 12, color: '#64748B', fontWeight: '500' },
+  categoryBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  categoryBadgeCompleted: { backgroundColor: '#E2E8F0' },
+  categoryText: { fontSize: 11, fontWeight: '600' },
+  categoryTextCompleted: { color: '#94A3B8' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.5)' },
+  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 20 },
+  inputLabel: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6 },
+  input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 14, fontSize: 15, color: '#0F172A', marginBottom: 16 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  cancelBtn: { backgroundColor: '#F1F5F9', marginRight: 8 },
+  cancelBtnText: { color: '#475569', fontWeight: '600', fontSize: 15 },
+  saveBtn: { backgroundColor: '#6366F1', marginLeft: 8 },
+  saveBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 }
 });
