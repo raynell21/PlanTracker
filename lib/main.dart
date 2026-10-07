@@ -1,174 +1,227 @@
 import 'package:flutter/material.dart';
 
+import 'package:plantracker/controllers/task_controller.dart';
+import 'package:plantracker/models/plan_task.dart';
+import 'package:plantracker/screens/task_editor_screen.dart';
+
 void main() {
   runApp(const PlanTrackerApp());
 }
 
-class PlanTrackerApp extends StatelessWidget {
+class PlanTrackerApp extends StatefulWidget {
   const PlanTrackerApp({super.key});
 
   @override
+  State<PlanTrackerApp> createState() => _PlanTrackerAppState();
+}
+
+class _PlanTrackerAppState extends State<PlanTrackerApp> {
+  late final TaskController _taskController;
+
+  @override
+  void initState() {
+    super.initState();
+    _taskController = TaskController();
+    _taskController.loadTasks();
+  }
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'PlanTracker',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FF),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1F2A44),
-          brightness: Brightness.light,
-        ),
-        textTheme: ThemeData.light().textTheme.apply(
-          bodyColor: const Color(0xFF1F2937),
-          displayColor: const Color(0xFF111827),
-        ),
-      ),
-      home: const DashboardScreen(),
+    return AnimatedBuilder(
+      animation: _taskController,
+      builder: (context, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'PlanTracker',
+          theme: ThemeData(
+            useMaterial3: true,
+            scaffoldBackgroundColor: const Color(0xFFF5F7FF),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF1F2A44),
+              brightness: Brightness.light,
+            ),
+            textTheme: ThemeData.light().textTheme.apply(
+              bodyColor: const Color(0xFF1F2937),
+              displayColor: const Color(0xFF111827),
+            ),
+          ),
+          home: DashboardScreen(taskController: _taskController),
+        );
+      },
     );
   }
 }
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class DashboardScreen extends StatelessWidget {
+  final TaskController taskController;
 
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  String selectedFilter = 'All';
-
-  final List<PlanTask> tasks = [
-    PlanTask(
-      title: 'Product strategy review',
-      category: 'Work',
-      dueDate: 'Today, 4:30 PM',
-      completed: false,
-      progress: 0.72,
-      accentColor: const Color(0xFF7C8CFF),
-      totalSteps: 5,
-      completedSteps: 3,
-    ),
-    PlanTask(
-      title: 'Gym and recovery session',
-      category: 'Personal',
-      dueDate: 'Tomorrow, 7:00 AM',
-      completed: true,
-      progress: 1.0,
-      accentColor: const Color(0xFF7AD8B0),
-      totalSteps: 3,
-      completedSteps: 3,
-    ),
-    PlanTask(
-      title: 'Client follow-up sprint',
-      category: 'Urgent',
-      dueDate: 'Today, 2:00 PM',
-      completed: false,
-      progress: 0.41,
-      accentColor: const Color(0xFFFF9E7A),
-      totalSteps: 4,
-      completedSteps: 2,
-    ),
-    PlanTask(
-      title: 'Home cleanup checklist',
-      category: 'Personal',
-      dueDate: 'Fri, 8:00 PM',
-      completed: false,
-      progress: 0.58,
-      accentColor: const Color(0xFF8BC6FF),
-      totalSteps: 5,
-      completedSteps: 3,
-    ),
-    PlanTask(
-      title: 'Launch meeting prep',
-      category: 'Work',
-      dueDate: 'Mon, 10:00 AM',
-      completed: false,
-      progress: 0.28,
-      accentColor: const Color(0xFF9D8CFF),
-      totalSteps: 6,
-      completedSteps: 2,
-    ),
-  ];
+  const DashboardScreen({
+    super.key,
+    required this.taskController,
+  });
 
   List<PlanTask> get filteredTasks {
-    if (selectedFilter == 'All') {
-      return tasks;
+    if (taskController.tasks.isEmpty) {
+      return const [];
     }
-    return tasks.where((task) => task.category == selectedFilter).toList();
+
+    return taskController.tasks;
+  }
+
+  Future<void> _openTaskEditor(BuildContext context, [PlanTask? task]) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TaskEditorScreen(
+          taskController: taskController,
+          task: task,
+        ),
+      ),
+    );
+
+    if (context.mounted) {
+      await taskController.loadTasks();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (taskController.isLoading && taskController.tasks.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 1100;
         final isTablet = constraints.maxWidth >= 700;
         final horizontalPadding = isDesktop ? 32.0 : isTablet ? 24.0 : 18.0;
+        final tasks = taskController.tasks;
+        final pendingTasks = tasks.where((task) => !task.completed).length;
 
-        return Scaffold(
-          floatingActionButton: Padding(
-            padding: EdgeInsets.only(bottom: isDesktop ? 24 : 16),
-            child: FloatingActionButton.extended(
-              onPressed: () {},
-              backgroundColor: const Color(0xFF1F2A44),
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('New plan'),
-            ),
-          ),
-          body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isDesktop ? 1280 : 900),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    18,
-                    horizontalPadding,
-                    96,
+        return DashboardView(
+          taskController: taskController,
+          tasks: tasks,
+          pendingTasks: pendingTasks,
+          onAddTask: () => _openTaskEditor(context),
+          onEditTask: (task) => _openTaskEditor(context, task),
+          horizontalPadding: horizontalPadding,
+        );
+      },
+    );
+  }
+}
+
+class DashboardView extends StatefulWidget {
+  final TaskController taskController;
+  final List<PlanTask> tasks;
+  final int pendingTasks;
+  final VoidCallback onAddTask;
+  final ValueChanged<PlanTask> onEditTask;
+  final double horizontalPadding;
+
+  const DashboardView({
+    super.key,
+    required this.taskController,
+    required this.tasks,
+    required this.pendingTasks,
+    required this.onAddTask,
+    required this.onEditTask,
+    required this.horizontalPadding,
+  });
+
+  @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  String selectedFilter = 'All';
+
+  List<PlanTask> get filteredTasks {
+    if (selectedFilter == 'All') {
+      return widget.tasks;
+    }
+    return widget.tasks.where((task) => task.category == selectedFilter).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.width >= 1100 ? 24 : 16),
+        child: FloatingActionButton.extended(
+          onPressed: widget.onAddTask,
+          backgroundColor: const Color(0xFF1F2A44),
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('New plan'),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width >= 1100 ? 1280 : 900),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                widget.horizontalPadding,
+                18,
+                widget.horizontalPadding,
+                96,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HeaderWidget(
+                    userName: 'Maya',
+                    todayLabel: 'Thursday, Sep 30',
+                    tasksLeft: widget.pendingTasks,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      HeaderWidget(
-                        userName: 'Maya',
-                        todayLabel: 'Thursday, Sep 30',
-                        tasksLeft: 12,
-                      ),
-                      const SizedBox(height: 24),
-                      SummaryRow(tasks: tasks),
-                      const SizedBox(height: 24),
-                      FilterChipRow(
-                        selectedFilter: selectedFilter,
-                        onSelected: (value) {
-                          setState(() {
-                            selectedFilter = value;
-                          });
+                  const SizedBox(height: 24),
+                  SummaryRow(tasks: widget.tasks),
+                  const SizedBox(height: 24),
+                  FilterChipRow(
+                    selectedFilter: selectedFilter,
+                    onSelected: (value) {
+                      setState(() {
+                        selectedFilter = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Today’s plans',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...filteredTasks.map((task) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: GestureDetector(
+                      onTap: () => widget.onEditTask(task),
+                      child: TaskCard(
+                        task: task,
+                        onToggleCompletion: () async {
+                          await widget.taskController.toggleTask(task);
                         },
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Today’s plans',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1F2937),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      ...filteredTasks.map((task) => Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: TaskCard(task: task),
-                          )),
-                    ],
-                  ),
-                ),
+                    ),
+                  )),
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -442,8 +495,13 @@ class FilterChipRow extends StatelessWidget {
 
 class TaskCard extends StatelessWidget {
   final PlanTask task;
+  final VoidCallback onToggleCompletion;
 
-  const TaskCard({super.key, required this.task});
+  const TaskCard({
+    super.key,
+    required this.task,
+    required this.onToggleCompletion,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -471,7 +529,7 @@ class TaskCard extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
-            onChanged: (_) {},
+            onChanged: (_) => onToggleCompletion(),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -558,26 +616,4 @@ class TaskCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class PlanTask {
-  final String title;
-  final String category;
-  final String dueDate;
-  final bool completed;
-  final double progress;
-  final Color accentColor;
-  final int totalSteps;
-  final int completedSteps;
-
-  const PlanTask({
-    required this.title,
-    required this.category,
-    required this.dueDate,
-    required this.completed,
-    required this.progress,
-    required this.accentColor,
-    required this.totalSteps,
-    required this.completedSteps,
-  });
 }
